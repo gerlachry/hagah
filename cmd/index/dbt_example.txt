@@ -1,0 +1,8 @@
+http://dbt.io/text/verse?key=482fbae627b0d28bd4d7e9e8432cae08&dam_id=ENGESVO2ET&book_id=Gen&v=2
+
+http://dbt.io/text/verse?key=482fbae627b0d28bd4d7e9e8432cae08&dam_id=ENGESVO2ET&v=2&book_id=
+
+
+http://dbt.io/library/book?key=482fbae627b0d28bd4d7e9e8432cae08&dam_id=ENGESVO2ET&v=2
+
+http://dbt.io/library/book?v=2&dam_id=ENGESVO2ET&key=482fbae627b0d28bd4d7e9e8432cae08
