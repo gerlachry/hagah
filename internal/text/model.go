@@ -6,6 +6,8 @@ import (
 	"strconv"
 )
 
+// ********************* Models related to Digital Bible Platform APIs ************
+
 // Book A struct for holding book info from scripture.
 // This structure is based on the Digital Bible Platform /library/books API.
 type Book struct {
@@ -17,7 +19,8 @@ type Book struct {
 	Chapters         string `json:"chapters"`
 }
 
-/*
+// Verse A struct for holding a verse of scripture.
+/* Example of a verse:
    "dam_id": "ENGESVO2ET",
    "book_id": "Gen",
    "book_name": "Genesis",
@@ -25,7 +28,6 @@ type Book struct {
    "number_of_chapters": "50",
    "chapters": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50"
 */
-// Verse A struct for holding a verse of scripture.
 type Verse struct {
 	ID           string `json:"id"`
 	BookName     string `json:"book_name"`
@@ -61,4 +63,45 @@ func (v *Verse) GetID() string {
 // Collection A struct for a collection of verses, ie. multiple verses, chapter or entire books.
 type Collection struct {
 	Verses []*Verse
+}
+
+// ********************* Models related to relational database ************
+
+// Users the struct for holding Users information.
+type Users struct {
+	ID         int
+	FirstName  string `db:"first_name"`
+	Lastname   string `db:"last_name"`
+	Username   string `db:"username"`
+	Email      string `db:"email"`
+	Active     bool
+	CreatedDt  int `db:"created_dt"`
+	ModifiedDt int `db:"modified_dt"`
+}
+
+// Books the struct for mapping books to their abbreviations.
+type Books struct {
+	ID           int
+	Name         string
+	Abbreviation string
+}
+
+// Scriptures the struct for holding the scripture text for each verse.
+type Scriptures struct {
+	ID      int
+	BookId  int
+	Chapter int
+	Verse   int
+	Text    string
+}
+
+// Comments the struct for users comments on a verse
+type Comments struct {
+	ID          int
+	UserId      int
+	ScriptureId int
+	Comment     string
+	CreatedDt   int `db:"created_dt"`
+	ModifiedDt  int `db:"modified_dt"`
+	Active      bool
 }

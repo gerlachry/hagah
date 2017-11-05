@@ -3,12 +3,12 @@ package main
 import (
 	"log"
 
-	// pq Database driver for Postgresql
 	"github.com/jmoiron/sqlx"
+	// pq Database driver for Postgresql
 	_ "github.com/lib/pq"
 )
 
-// Database initialization script for scripture database.
+// Postgresql initialization script for scripture database.
 
 func main() {
 	log.Println("Starting db init")

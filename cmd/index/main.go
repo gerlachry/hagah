@@ -13,7 +13,6 @@ import (
 
 	"github.com/gerlachr/scripture/internal/text"
 	"github.com/pkg/errors"
-	"gopkg.in/olivere/elastic.v5"
 )
 
 const (
@@ -61,25 +60,16 @@ func init() {
 }
 
 func main() {
-	log.Printf("Starting indexing of Scripture to host: %s; index: %s", esURL, esIndex)
-	//ctx := context.Background()
-	client, err := elastic.NewClient(
-		elastic.SetURL(esURL),
-		elastic.SetBasicAuth(os.Getenv("ES_USER"), os.Getenv("ES_PWD")),
-		elastic.SetSniff(false))
-	if err != nil {
-		// Handle error
-		panic(err)
-	}
-	defer client.Stop()
+	log.Println("Starting indexing of Scripture")
+	var handler text.IndexHandler
 
-	esversion, err := client.ElasticsearchVersion(esURL)
-	if err != nil {
-		// Handle error
-		panic(err)
+	_, e := os.LookupEnv("ES_URL")
+	_, p := os.LookupEnv("PG_URL")
+	if e {
+		handler = text.NewESHandler(esURL, esIndex)
+	} else if p {
+		handler = new(text.PGHandler)
 	}
-	fmt.Printf("Elasticsearch version %s\n", esversion)
-	handler := text.ESHandler{Client: client, ESIndex: esIndex}
 
 	booksURL := dbpBaseURL + "/library/book?v=2&dam_id=ENGESVO2ET&key=" + os.Getenv("DBP_KEY")
 	resp, err := http.Get(booksURL)
@@ -101,6 +91,7 @@ func main() {
 		if err != nil {
 			errors.Wrap(err, fmt.Sprintf("Error fetching verses with url: %s", textURL))
 		}
+
 		log.Printf(resp.Status)
 		verses := make([]text.Verse, 0)
 		err = json.NewDecoder(resp.Body).Decode(&verses)

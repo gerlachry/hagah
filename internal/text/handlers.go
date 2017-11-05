@@ -2,10 +2,21 @@ package text
 
 import (
 	"context"
+	"log"
+	"os"
 
 	"github.com/pkg/errors"
 	"gopkg.in/olivere/elastic.v5"
+	// pq Database driver for Postgresql
+	_ "github.com/lib/pq"
 )
+
+// IndexHandler interface for indexing documents
+type IndexHandler interface {
+	//Init(url string) error
+	Index(verses []Verse) error
+	Close() error
+}
 
 // ESHandler struct for handling Elasticsearch related activities
 type ESHandler struct {
@@ -13,10 +24,25 @@ type ESHandler struct {
 	ESIndex string
 }
 
-// Index Method for indexing a slice of Verses to Elasticsearch
-func (eshandler *ESHandler) Index(verses []Verse) error {
+// NewESHandler Method for creating a new ESHandler
+func NewESHandler(url string, index string) *ESHandler {
+	client, err := elastic.NewClient(
+		elastic.SetURL(url),
+		elastic.SetBasicAuth(os.Getenv("ES_USER"), os.Getenv("ES_PWD")),
+		elastic.SetSniff(false))
+	if err != nil {
+		// Handle error
+		panic(err)
+	}
+
+	return &ESHandler{Client: client, ESIndex: index}
+
+}
+
+// Index Method for indexing a slice of Verses to Elasticsearch.
+func (esHandler *ESHandler) Index(verses []Verse) error {
 	ctx := context.Background()
-	serivce, err := eshandler.Client.BulkProcessor().Name("ScriptureProcessor").Workers(2).BulkActions(1000).Do(ctx)
+	serivce, err := esHandler.Client.BulkProcessor().Name("ScriptureProcessor").Workers(2).BulkActions(1000).Do(ctx)
 	if err != nil {
 		errors.Wrap(err, "Error initializing BulkProcessor")
 	}
@@ -24,8 +50,31 @@ func (eshandler *ESHandler) Index(verses []Verse) error {
 
 	for _, v := range verses {
 		id := v.GetID()
-		r := elastic.NewBulkIndexRequest().Index(eshandler.ESIndex).Type("Verse").Id(id).Doc(v)
+		r := elastic.NewBulkIndexRequest().Index(esHandler.ESIndex).Type("Verse").Id(id).Doc(v)
 		serivce.Add(r)
 	}
+	return nil
+}
+
+// Close Method for closing down the Elasticsearch resources.
+func (esHandler *ESHandler) Close() error {
+	log.Println("Stopping Elasticsearch client")
+	esHandler.Client.Stop()
+	return nil
+}
+
+// PGHandler handler for writing scriptures to Postgresql.
+type PGHandler struct {
+	//Connection sqlx.Connection
+}
+
+// Index Method for indexing a slice of Verses to Postgresql.
+func (pgHandler *PGHandler) Index(verses []Verse) error {
+	log.Println("Initializing Postgresql connection")
+	return nil
+}
+
+// Close Method for closing down Postgresql resources.
+func (pgHandler *PGHandler) Close() error {
 	return nil
 }
