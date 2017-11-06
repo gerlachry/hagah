@@ -26,16 +26,16 @@ func main() {
 
 		CREATE TABLE books (
 			id serial PRIMARY KEY,
-			name text,
-			abbreviation text
+			name text NOT NULL UNIQUE,
+			abbreviation text NOT NULL UNIQUE
 		);
 
 		CREATE TABLE scriptures (
 			id serial PRIMARY KEY,
 			book_id integer REFERENCES books (id),
-			chapter integer,
-			verse integer,
-			text text
+			chapter integer NOT NULL,
+			verse integer NOT NULL,
+			text text NOT NULL
 		);
 
 		CREATE TABLE comments (

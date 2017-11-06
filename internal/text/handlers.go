@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"gopkg.in/olivere/elastic.v5"
 	// pq Database driver for Postgresql
@@ -65,12 +66,22 @@ func (esHandler *ESHandler) Close() error {
 
 // PGHandler handler for writing scriptures to Postgresql.
 type PGHandler struct {
-	//Connection sqlx.Connection
+	Connection *sqlx.DB
+}
+
+// NewPGHandler Function for creating a new PGHandler with a Postgres connection.
+func NewPGHandler(url string) (pgHandler *PGHandler, err error) {
+	db, err := sqlx.Connect("postgres", url)
+	if err != nil {
+		errors.Wrap(err, "Error connecting to Postgres")
+	}
+	return &PGHandler{Connection: db}, nil
 }
 
 // Index Method for indexing a slice of Verses to Postgresql.
 func (pgHandler *PGHandler) Index(verses []Verse) error {
-	log.Println("Initializing Postgresql connection")
+	log.Println("Indexing verses to Postgres")
+
 	return nil
 }
 
