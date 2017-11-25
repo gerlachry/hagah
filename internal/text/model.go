@@ -89,7 +89,7 @@ type Books struct {
 // Scriptures the struct for holding the scripture text for each verse.
 type Scriptures struct {
 	ID      int
-	BookId  int
+	BookID  int
 	Chapter int
 	Verse   int
 	Text    string
@@ -98,7 +98,7 @@ type Scriptures struct {
 // Comments the struct for users comments on a verse
 type Comments struct {
 	ID          int
-	UserId      int
+	UserID      int
 	ScriptureId int
 	Comment     string
 	CreatedDt   int `db:"created_dt"`

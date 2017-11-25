@@ -5,7 +5,6 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -19,20 +18,7 @@ const (
 	dbpBaseURL = "http://dbt.io"
 )
 
-// esURL the url to use for connecting to Elasticsearch if using for the database
-var esURL string
-
-// esIndex the Elasticsearch index to use when indexing scripture
-var esIndex string
-
-// Postgresql connection string URL if using Postgres as the database.
-var pgURL string
-
 func init() {
-	flag.StringVar(&esURL, "esURL", "http://localhost:9200", "Elasticsearch host and port.  Defaults to localhost:9200")
-	flag.StringVar(&esIndex, "esIndex", "scripture", "Name of the Elastisearch index to use")
-	flag.StringVar(&pgURL, "pgURL", "localhost", "Postgresql connection URL string")
-
 	_, e := os.LookupEnv("ES_URL")
 	if e {
 		_, b := os.LookupEnv("ES_USER")
@@ -59,47 +45,82 @@ func init() {
 	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime | log.Lmicroseconds)
 }
 
-func main() {
-	log.Println("Starting indexing of Scripture")
-	var handler text.IndexHandler
-
-	_, e := os.LookupEnv("ES_URL")
-	_, p := os.LookupEnv("PG_URL")
-	if e {
-		handler = text.NewESHandler(esURL, esIndex)
-	} else if p {
-		handler = new(text.PGHandler)
-	}
-
-	booksURL := dbpBaseURL + "/library/book?v=2&dam_id=ENGESVO2ET&key=" + os.Getenv("DBP_KEY")
-	resp, err := http.Get(booksURL)
-	if err != nil {
-		errors.Wrap(err, "Error fetching booksURL")
-	}
-
-	books := make([]text.Book, 0)
-	err = json.NewDecoder(resp.Body).Decode(&books)
-	if err != nil {
-		errors.Wrap(err, "Error decoding Books json response")
-	}
-
+func index(handler text.IndexHandler, books []text.Book, testemant string) error {
 	for _, b := range books {
 		log.Printf("indexing book: %s", b.BookID)
-		textURL := dbpBaseURL + "/text/verse/?v=2&dam_id=ENGESVO2ET&key=" + os.Getenv("DBP_KEY") + "&book_id=" + b.BookID
+		textURL := dbpBaseURL + "/text/verse/?v=2&dam_id=ENGESV" + testemant + "2ET&key=" + os.Getenv("DBP_KEY") + "&book_id=" + b.BookID
 		log.Printf("verse url: %s", textURL)
-		resp, err = http.Get(textURL)
+		resp, err := http.Get(textURL)
 		if err != nil {
-			errors.Wrap(err, fmt.Sprintf("Error fetching verses with url: %s", textURL))
+			return errors.Wrap(err, fmt.Sprintf("Error fetching verses with url: %s", textURL))
 		}
 
 		log.Printf(resp.Status)
 		verses := make([]text.Verse, 0)
 		err = json.NewDecoder(resp.Body).Decode(&verses)
 		if err != nil {
-			errors.Wrap(err, "Error marshelling verses")
+			return errors.Wrap(err, "Error marshelling verses")
 		}
 		log.Printf("Verse count: %d", len(verses))
-		handler.Index(verses)
+		err = handler.Index(verses)
+		if err != nil {
+			return errors.Wrap(err, "Fatal error indexing verses")
+		}
+	}
+	return nil
+}
+
+func main() {
+	log.Println("Starting indexing of Scripture")
+	var handler text.IndexHandler
+
+	esURL, e := os.LookupEnv("ES_URL")
+	esIndex, _ := os.LookupEnv("ES_INDEX")
+	pgURL, p := os.LookupEnv("PG_URL")
+	var err error
+	if e {
+		handler = text.NewESHandler(esURL, esIndex)
+	} else if p {
+		handler, err = text.NewPGHandler(pgURL)
+		if err != nil {
+			log.Fatalf("error while obtaining pg handler : %s", err)
+		}
 	}
 
+	booksURL := dbpBaseURL + "/library/book?v=2&dam_id=ENGESVO2ET&key=" + os.Getenv("DBP_KEY")
+	log.Println(booksURL)
+	resp, err := http.Get(booksURL)
+	if err != nil {
+		panic("Error fetching booksURL")
+	}
+
+	booksOT := make([]text.Book, 0)
+	err = json.NewDecoder(resp.Body).Decode(&booksOT)
+	if err != nil {
+		log.Println("Error decoding Books json response")
+		panic(err)
+	}
+
+	log.Printf("OT Books count: %v", len(booksOT))
+	err = index(handler, booksOT, "O")
+	if err != nil {
+		log.Println("error idexing")
+		panic(err)
+	}
+
+	booksURL = dbpBaseURL + "/library/book?v=2&dam_id=ENGESVN2ET&key=" + os.Getenv("DBP_KEY")
+	log.Println(booksURL)
+	resp, err = http.Get(booksURL)
+	if err != nil {
+		errors.Wrap(err, "Error fetching booksURL")
+	}
+
+	booksNT := make([]text.Book, 0)
+	err = json.NewDecoder(resp.Body).Decode(&booksNT)
+	if err != nil {
+		errors.Wrap(err, "Error decoding Books json response")
+	}
+
+	log.Printf("NT Books count: %v", len(booksNT))
+	index(handler, booksNT, "N")
 }

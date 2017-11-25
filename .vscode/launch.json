@@ -10,7 +10,7 @@
             "port": 2345,
             "host": "127.0.0.1",
             "program": "${fileDirname}",
-            "env": {},
+            "env": {"PG_URL": "postgres://postgres:postgres@localhost:5432/scripture?sslmode=disable", "DBP_KEY": "482fbae627b0d28bd4d7e9e8432cae08"                "},
             "args": [],
             "showLog": true
         }

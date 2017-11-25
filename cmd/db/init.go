@@ -1,9 +1,9 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 
-	"github.com/jmoiron/sqlx"
 	// pq Database driver for Postgresql
 	_ "github.com/lib/pq"
 )
@@ -35,7 +35,8 @@ func main() {
 			book_id integer REFERENCES books (id),
 			chapter integer NOT NULL,
 			verse integer NOT NULL,
-			text text NOT NULL
+			text text NOT NULL,
+			CONSTRAINT scriptures_unq UNIQUE (book_id, chapter, verse)
 		);
 
 		CREATE TABLE comments (
@@ -48,10 +49,13 @@ func main() {
 			active boolean
 		);	
 	`
-	db, err := sqlx.Connect("postgres", "user=postgres password=postgres dbname=scripture sslmode=disable")
+	db, err := sql.Open("postgres", "user=postgres password=postgres dbname=scripture sslmode=disable")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("error connecting to database: %s", err)
 	}
-	db.MustExec(schema)
-	log.Println("Created scripture tables")
+	res, err := db.Exec(schema)
+	if err != nil {
+		log.Fatalf("error initializing database: ", err)
+	}
+	log.Printf("Created scripture tables: %s", res)
 }
